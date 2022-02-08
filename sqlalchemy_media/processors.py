@@ -1,3 +1,4 @@
+from distutils import extension
 import io
 from typing import Iterable, Type
 
@@ -80,8 +81,11 @@ class MagicAnalyzer(Analyzer):
     """
 
     def process(self, descriptor: StreamDescriptor, context: dict):
+        mimetype = magic_mime_from_buffer(descriptor.get_header_buffer())
+
         context.update(
-            content_type=magic_mime_from_buffer(descriptor.get_header_buffer())
+            content_type=mimetype,
+            extension=guess_extension(mimetype)
         )
 
 
@@ -424,13 +428,15 @@ class ImageAnalyzer(Analyzer):
         except OSError:
             raise AnalyzeError('Cannot identify the requested image file')
 
+        mimetype = img.get_format_mimetype()
+
         context.update(
             width=img.width,
             height=img.height,
-            content_type=img.get_format_mimetype()
+            content_type=mimetype,
+            extension=guess_extension(mimetype)
         )
 
         # prepare for next processor, calling this method is not bad and just
         # uses the memory temporary.
         descriptor.prepare_to_read(backend='memory')
-
